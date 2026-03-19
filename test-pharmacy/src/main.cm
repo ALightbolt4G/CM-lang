@@ -1,0 +1,11 @@
+// CM Project Entry Point
+using Http;
+using Json;
+
+namespace App {
+    public class Program {
+        public static void Main() {
+            Console.WriteLine("Hello, CM World!");
+        }
+    }
+}

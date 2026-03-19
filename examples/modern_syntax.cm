@@ -1,0 +1,230 @@
+// CM Language v5.0 - C#-like Professional Syntax Example
+// This demonstrates the new professional syntax features
+
+// Package imports (new syntax - replaces require)
+using Http;
+using Json;
+using Database;
+using Cache;
+
+// Namespace declaration (new)
+namespace MyApp.Api {
+    
+    // Interface definition (new)
+    interface IRepository<T> {
+        Task<T> GetById(int id);
+        Task<List<T>> GetAll();
+        Task Save(T entity);
+    }
+    
+    // Class with generics (new)
+    public class UserRepository : IRepository<User> {
+        private DatabaseConnection db;
+        private Cache cache;
+        
+        // Constructor
+        public UserRepository(DatabaseConnection db, Cache cache) {
+            this.db = db;
+            this.cache = cache;
+        }
+        
+        // Async method (new)
+        public async Task<User> GetById(int id) {
+            // Try cache first
+            string cacheKey = "user:" + id;
+            string cached = await cache.GetAsync(cacheKey);
+            if (cached != null) {
+                return Json.Parse<User>(cached);
+            }
+            
+            // Query database
+            string sql = "SELECT * FROM users WHERE id = @id";
+            var result = await db.QueryAsync<User>(sql, id);
+            
+            // Cache result
+            if (result != null) {
+                await cache.SetAsync(cacheKey, Json.Stringify(result), 300);
+            }
+            
+            return result;
+        }
+        
+        public async Task<List<User>> GetAll() {
+            return await db.QueryAsync<List<User>>("SELECT * FROM users");
+        }
+        
+        public async Task Save(User user) {
+            if (user.Id == 0) {
+                await db.ExecuteAsync("INSERT INTO users (name, email) VALUES (@name, @email)", 
+                    user.Name, user.Email);
+            } else {
+                await db.ExecuteAsync("UPDATE users SET name = @name, email = @email WHERE id = @id",
+                    user.Name, user.Email, user.Id);
+            }
+            
+            // Invalidate cache
+            await cache.DeleteAsync("user:" + user.Id);
+        }
+    }
+    
+    // Model class (new)
+    public class User {
+        // Auto-implemented properties (new)
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public DateTime CreatedAt { get; set; }
+        
+        // Computed property (new)
+        public bool IsNew => Id == 0;
+    }
+    
+    // HTTP API Controller (new)
+    [Route("/api/users")]  // Attribute (new)
+    [Cache(60)]            // Response caching (new)
+    public class UserController {
+        private UserRepository repo;
+        
+        public UserController() {
+            var db = new DatabaseConnection("connection_string");
+            var cache = new Cache("redis://localhost");
+            this.repo = new UserRepository(db, cache);
+        }
+        
+        [Route("/{id}")]
+        [Method("GET")]
+        public async Task<IActionResult> GetUser(int id) {
+            try {
+                var user = await repo.GetById(id);
+                if (user == null) {
+                    return NotFound();
+                }
+                return Json(user);
+            } catch (Exception ex) {
+                return Error(500, ex.Message);
+            }
+        }
+        
+        [Route("/")]
+        [Method("GET")]
+        public async Task<IActionResult> GetAllUsers() {
+            var users = await repo.GetAll();
+            return Json(users);
+        }
+        
+        [Route("/")]
+        [Method("POST")]
+        public async Task<IActionResult> CreateUser([Body] User user) {
+            try {
+                await repo.Save(user);
+                return Created("/api/users/" + user.Id, user);
+            } catch (Exception ex) {
+                return Error(400, ex.Message);
+            }
+        }
+    }
+    
+    // Main program (new async main)
+    public class Program {
+        public static async Task Main() {
+            // Initialize with performance optimizations
+            GC.EnableGenerational();
+            GC.SetMaxPauseMs(5);
+            
+            // Create HTTP server with optimized settings
+            var server = new HttpServer(new HttpServerConfig {
+                UseKeepAlive = true,
+                KeepAliveTimeout = 30,
+                MaxRequestsPerConnection = 100,
+                UseCompression = true,
+                CompressionThreshold = 1024
+            });
+            
+            // Register controllers
+            server.RegisterController<UserController>();
+            
+            // Add middleware
+            server.Use<LoggingMiddleware>();
+            server.Use<ErrorHandlingMiddleware>();
+            server.Use<RateLimitingMiddleware>(100, 10);  // 100 req/sec, burst 10
+            
+            // Health check endpoint
+            server.Get("/health", (req, res) => {
+                return Json(new {
+                    status = "healthy",
+                    version = "5.0.0",
+                    uptime = Environment.Uptime,
+                    memory = GC.Stats
+                });
+            });
+            
+            // Metrics endpoint
+            server.Get("/metrics", (req, res) => {
+                return Content(Backend.GetMetricsJson(), "application/json");
+            });
+            
+            Console.WriteLine("Server starting on http://localhost:8080");
+            await server.ListenAsync(8080);
+        }
+    }
+    
+    // Middleware example
+    public class LoggingMiddleware : IMiddleware {
+        public async Task Invoke(HttpContext ctx, Func<Task> next) {
+            var start = DateTime.Now;
+            Console.WriteLine($"[{start}] {ctx.Request.Method} {ctx.Request.Path}");
+            
+            await next();
+            
+            var elapsed = (DateTime.Now - start).TotalMilliseconds;
+            Console.WriteLine($"[{DateTime.Now}] Completed in {elapsed:F2}ms - {ctx.Response.StatusCode}");
+        }
+    }
+    
+    public class ErrorHandlingMiddleware : IMiddleware {
+        public async Task Invoke(HttpContext ctx, Func<Task> next) {
+            try {
+                await next();
+            } catch (Exception ex) {
+                Console.Error.WriteLine($"Unhandled error: {ex}");
+                ctx.Response.StatusCode = 500;
+                await ctx.Response.WriteAsync(Json.Stringify(new {
+                    error = "Internal Server Error",
+                    message = ex.Message
+                }));
+            }
+        }
+    }
+}
+
+// Extension methods (new)
+public static class StringExtensions {
+    public static bool IsNullOrEmpty(this string str) {
+        return str == null || str.Length == 0;
+    }
+    
+    public static string ToCamelCase(this string str) {
+        if (str.IsNullOrEmpty()) return str;
+        return str[0].ToLower() + str.Substring(1);
+    }
+}
+
+// Null safety (new)
+public void Example() {
+    string? maybeNull = GetMaybeNull();
+    
+    // Null-conditional operator (new)
+    int length = maybeNull?.Length ?? 0;
+    
+    // Pattern matching (new)
+    if (maybeNull is string s) {
+        Console.WriteLine(s.ToUpper());
+    }
+    
+    // Switch expression (new)
+    var status = result switch {
+        Success s => "OK",
+        Error e => $"Error: {e.Message}",
+        _ => "Unknown"
+    };
+}

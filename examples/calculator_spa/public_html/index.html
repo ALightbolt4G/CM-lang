@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CM Calculator</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hdr">
+        <h1>CM Calculator</h1>
+        <p>Frontend served by the CM HTTP standard library.</p>
+      </header>
+
+      <section class="card">
+        <div class="row">
+          <input id="a" type="number" placeholder="A" />
+          <select id="op">
+            <option value="+">+</option>
+            <option value="-">-</option>
+            <option value="*">*</option>
+            <option value="/">/</option>
+          </select>
+          <input id="b" type="number" placeholder="B" />
+        </div>
+
+        <div class="row">
+          <button id="calc">Calculate</button>
+          <div class="out">
+            Result: <span id="result">—</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>
+

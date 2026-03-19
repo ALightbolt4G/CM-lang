@@ -1,0 +1,3 @@
+fn main() {
+    let response = http_get("https://example.com");
+}

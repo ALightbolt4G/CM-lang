@@ -1,0 +1,12 @@
+require("public_html/");
+
+print("CM Calculator SPA starting...\n");
+gc.stats();
+
+c {
+    cm_app_get("/", cm_serve_index);
+    cm_app_get("/style.css", cm_serve_css);
+    cm_app_get("/script.js", cm_serve_js);
+    cm_app_listen(8080);
+}
+

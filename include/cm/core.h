@@ -46,7 +46,9 @@ typedef enum {
     CM_ERROR_PARSE = 16,
     CM_ERROR_TYPE = 17,
     CM_ERROR_UNIMPLEMENTED = 18,
-    CM_ERROR_UNKNOWN = 19
+    CM_ERROR_UNKNOWN = 19,
+    CM_ERROR_RUNTIME = 20,
+    CM_ERROR_UNINITIALIZED = 21
 } cm_error_code_t;
 
 /* Base Opaque Types */

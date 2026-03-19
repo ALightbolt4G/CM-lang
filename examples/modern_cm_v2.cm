@@ -1,0 +1,135 @@
+// CM v2 Example - Modern C-like syntax with safety
+// Demonstrates the new simplified syntax
+
+// Import modules
+import "http";
+import "json";
+
+// Struct definition (immutable by default)
+struct User {
+    id: int
+    name: string
+    mut email: string    // Mutable field
+    age: int
+}
+
+// Implementation block for User
+impl User {
+    // Constructor function
+    fn new(id: int, name: string, email: string, age: int) -> User {
+        return User {
+            id: id,
+            name: name,
+            email: email,
+            age: age
+        }
+    }
+    
+    // Method to update email (takes mutable self)
+    fn update_email(mut self, new_email: string) {
+        self.email = new_email
+    }
+    
+    // Method to get display name (immutable)
+    fn display_name(self) -> string {
+        return "User: {self.name} (ID: {self.id})"
+    }
+}
+
+// Function with type inference
+fn add_numbers(a: int, b: int) -> int {
+    return a + b
+}
+
+// Function returning Option type
+fn find_user(id: int) -> ?User {
+    if (id == 1) {
+        return Some(User::new(1, "Adham", "adham@example.com", 25))
+    }
+    return None
+}
+
+// Function returning Result type
+fn parse_age(s: string) -> Result<int, string> {
+    // Simple parsing logic
+    if (s == "25") {
+        return Ok(25)
+    }
+    return Err("Invalid age format")
+}
+
+// Function with safe pointers
+fn create_user_array(count: int) -> ^User {
+    let users = malloc<User>(count)!
+    users^[0] = User::new(1, "Alice", "alice@example.com", 30)
+    users^[1] = User::new(2, "Bob", "bob@example.com", 25)
+    return users
+}
+
+// Main function
+fn main() -> int {
+    // Initialize GC
+    gc.init()
+    
+    // Immutable variable
+    let name = "Adham"
+    let age := 21        // Type inference
+    
+    // Mutable variable
+    mut counter = 0
+    
+    // String interpolation
+    print("Hello {name}, you are {age} years old!")
+    
+    // Function call
+    let sum = add_numbers(10, 5)
+    print("10 + 5 = {sum}")
+    
+    // Option handling
+    let user = find_user(1)
+    match user {
+        Some(u) => {
+            print("Found user: {u.display_name()}")
+        }
+        None => {
+            print("User not found")
+        }
+    }
+    
+    // Result handling with ! operator (unwrap or panic)
+    let parsed_age = parse_age("25")!
+    print("Parsed age: {parsed_age}")
+    
+    // Safe pointer usage
+    let user_array = create_user_array(2)
+    print("First user: {user_array^[0].display_name()}")
+    
+    // HTTP server example
+    @route("/api/users")
+    @method("GET")
+    fn get_users() -> string {
+        let users = array<User>(2)
+        users[0] = User::new(1, "Alice", "alice@example.com", 30)
+        users[1] = User::new(2, "Bob", "bob@example.com", 25)
+        return json.stringify(users)
+    }
+    
+    // Loop example
+    while (counter < 3) {
+        print("Counter: {counter}")
+        counter = counter + 1
+    }
+    
+    // If statement
+    if (age >= 18) {
+        print("You are an adult")
+    } else {
+        print("You are a minor")
+    }
+    
+    // GC statistics
+    gc.collect()
+    print("GC completed successfully")
+    
+    return 0
+}

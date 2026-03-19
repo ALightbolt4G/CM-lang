@@ -71,4 +71,13 @@ struct cm_map* cm_map_load_from_json(const char* filepath);
 }
 #endif
 
+/**
+ * @brief Macro for iterating over map entries.
+ */
+#define cm_map_foreach(map, key_var, value_var) \
+    for (int _i = 0; _i < (map)->bucket_count; _i++) \
+        for (cm_map_entry_t* _e = (map)->buckets[_i]; _e; _e = _e->next) \
+            for (const char* key_var = _e->key; key_var; key_var = NULL) \
+                for (void* value_var = _e->value; value_var; value_var = NULL)
+
 #endif /* CM_MAP_H */

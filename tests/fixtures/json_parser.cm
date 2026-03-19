@@ -1,0 +1,94 @@
+// json_parser.cm - Simple JSON parser in CM
+// Usage: json_parse('{"name": "alice", "age": 25}')
+
+require("public_html/");
+
+// JSON value types
+str JSON_NULL = "null";
+str JSON_TRUE = "true";
+str JSON_FALSE = "false";
+
+// Parse a JSON string into a map
+str json_parse(str input) {
+    // Remove whitespace
+    input.trim();
+    
+    // Check type and parse
+    if (input.starts_with("{")) {
+        return json_parse_object(input);
+    }
+    if (input.starts_with("[")) {
+        return json_parse_array(input);
+    }
+    if (input.starts_with("\"")) {
+        return json_parse_string(input);
+    }
+    if (input == "null") {
+        return JSON_NULL;
+    }
+    if (input == "true") {
+        return JSON_TRUE;
+    }
+    if (input == "false") {
+        return JSON_FALSE;
+    }
+    // Number
+    return input;
+}
+
+// Parse JSON object {...}
+str json_parse_object(str input) {
+    map result = map();
+    
+    // Remove { and }
+    str content = input.slice(1, input.length() - 1);
+    
+    // Split by commas (not inside strings)
+    list pairs = content.split(",");
+    
+    for (pair in pairs) {
+        // Split key:value
+        list kv = pair.split(":");
+        str key = json_parse_string(kv[0].trim());
+        str value = json_parse(kv[1].trim());
+        result.set(key, value);
+    }
+    
+    return result;
+}
+
+// Parse JSON array [...]
+str json_parse_array(str input) {
+    list result = list();
+    
+    // Remove [ and ]
+    str content = input.slice(1, input.length() - 1);
+    
+    // Split by commas
+    list items = content.split(",");
+    
+    for (item in items) {
+        result.append(json_parse(item.trim()));
+    }
+    
+    return result;
+}
+
+// Parse JSON string (remove quotes and unescape)
+str json_parse_string(str input) {
+    // Remove surrounding quotes
+    return input.slice(1, input.length() - 1);
+}
+
+// Test
+str test_json = '{"name": "alice", "age": 25, "active": true}';
+print("Parsing: ");
+print(test_json);
+print("\n");
+
+str result = json_parse(test_json);
+print("Result type: ");
+print(result.type());
+print("\n");
+
+gc.stats();

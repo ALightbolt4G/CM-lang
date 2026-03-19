@@ -1,0 +1,30 @@
+{
+  "name": "cm-language",
+  "displayName": "CM Language Support",
+  "description": "Syntax highlighting and language support for CM",
+  "version": "5.0.0",
+  "publisher": "cm-team",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "cm",
+        "aliases": ["CM"],
+        "extensions": [".cm"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cm",
+        "scopeName": "source.cm",
+        "path": "./syntaxes/cm.tmLanguage.json"
+      }
+    ]
+  }
+}

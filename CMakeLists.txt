@@ -10,22 +10,34 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif()
 
 # Library sources
-set(CM_SOURCES
-    src/memory.c
-    src/error.c
-    src/string.c
-    src/array.c
-    src/map.c
-    src/json.c
-    src/http.c
-    src/file.c
-    src/thread.c
-    src/cmd.c
-    src/core.c
+set(CM_RUNTIME_SOURCES
+    src/runtime/memory.c
+    src/runtime/error.c
+    src/runtime/error_detail.c
+    src/runtime/error_obj.c
+    src/runtime/debug.c
+    src/runtime/project.c
+    src/runtime/string.c
+    src/runtime/array.c
+    src/runtime/map.c
+    src/runtime/json.c
+    src/runtime/http.c
+    src/runtime/file.c
+    src/runtime/thread.c
+    src/runtime/cmd.c
+    src/runtime/core.c
+    src/runtime/list.c
+    src/runtime/dynarray.c
+    src/runtime/packages.c
+    src/runtime/backend.c
+    src/runtime/option.c
+    src/runtime/result.c
+    src/runtime/safe_ptr.c
+    src/runtime/oop.c
 )
 
-# Core library target
-add_library(cm STATIC ${CM_SOURCES})
+# Core library target (static lib)
+add_library(cm STATIC ${CM_RUNTIME_SOURCES})
 target_include_directories(cm PUBLIC include)
 
 # Platform specific linking
@@ -41,6 +53,12 @@ target_link_libraries(cm_test cm)
 
 add_test(NAME CM_CoreTest COMMAND cm_test)
 
+# Compiler frontend/codegen smoke test
+add_executable(cm_compiler_test tests/cm_compiler_test.c)
+target_link_libraries(cm_compiler_test cm_compiler cm)
+add_test(NAME CM_CompilerTest COMMAND cm_compiler_test)
+set_tests_properties(CM_CompilerTest PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
 # Backend server example
 add_executable(cm_server server.c)
 target_link_libraries(cm_server cm)
@@ -48,6 +66,43 @@ target_link_libraries(cm_server cm)
 if(WIN32)
     target_link_libraries(cm_server ws2_32)
 endif()
+
+# CM Language Compiler CLI
+# Use an internal target name to avoid clashing with the 'cm' static library.
+# Compiler sources
+set(CM_COMPILER_SOURCES
+    src/compiler/lexer/lexer.c
+    src/compiler/lexer/lexer_v2.c
+    src/compiler/ast/ast.c
+    src/compiler/ast/ast_v2.c
+    src/compiler/parser/parser.c
+    src/compiler/parser/parser_v2.c
+    src/compiler/codegen/codegen_v2.c
+    src/compiler/tokens/tokens.c
+    src/cm_codegen.c
+    src/cm_highlight.c
+    src/compiler/safety/cm_safety.c
+)
+# Compiler library
+add_library(cm_compiler STATIC ${CM_COMPILER_SOURCES})
+target_link_libraries(cm_compiler cm)
+target_include_directories(cm_compiler PUBLIC include src)
+
+# CLI executable
+add_executable(cm_cli src/cm_cli.c)
+target_link_libraries(cm_cli cm_compiler cm)
+
+# Name the resulting executable 'cm' and copy it to the project root so you can run:
+#   cm main.cm app
+set_target_properties(cm_cli PROPERTIES RUNTIME_OUTPUT_NAME "cm")
+
+# Copy disabled - file is locked by running process
+# add_custom_command(TARGET cm_cli POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy
+#         "$<TARGET_FILE:cm_cli>"
+#         "${CMAKE_SOURCE_DIR}/$<TARGET_FILE_NAME:cm_cli>"
+#     COMMENT "Copying cm compiler to project root..."
+# )
 
 # Copy public_html next to the server executable so relative paths work
 add_custom_command(TARGET cm_server POST_BUILD

@@ -1,0 +1,20 @@
+# CM build outputs
+*.exe
+*.out
+a.out
+cm_out.c
+dist/
+build/
+
+# CM cache
+.cache/
+.cm/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
